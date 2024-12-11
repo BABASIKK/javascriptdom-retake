@@ -1,0 +1,188 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #CCCCCC;
+}
+.card-container {
+    display: flex;
+    gap: 20px;
+}
+.card {
+    width: 400px;
+    height: 250px;
+    border-radius: 10px;
+    position: relative;
+    background-color: #C0C0C0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    transition: background-color 0.3s ease;
+}
+.sberbank { background-color: #2E8B57; } 
+.tinkoff { background-color: #D4AF37; }
+.alfa { background-color: #8B0000; }
+.chip {
+    width: 50px;
+    position: absolute;
+    top: 90px;
+    left: 15%;
+    transform: translateX(-50%);
+}
+.account-number {
+    font-size: 1.3em;
+    color: black;
+    text-align: center;
+    margin-top: 150px;
+    position: relative;
+}
+.card-number {
+    font-size: 1.3em;
+    color: black;
+    text-align: center;
+    margin-top: 30px;
+    position: relative;
+}
+.placeholder {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    color: lightgray;
+    pointer-events: none;
+    font-size: 1em;
+    letter-spacing: 0.4em;
+    text-align: center;
+}
+input {
+    border: none;
+    background: transparent;
+    color: black;
+    text-align: center;
+    font-size: 1em;
+    letter-spacing: 0.4em;
+    caret-color: black;
+    position: relative;
+    width: 100%;
+    outline: none;
+    z-index: 1;
+}
+input:focus { outline: none; }
+.bank-logo, .payment-logo {
+    position: absolute;
+    width: 50px;
+}
+.bank-logo {
+    top: 10px;
+    width: 150px;
+    right: -5%;
+}
+.payment-logo {
+    bottom: 10px;
+    width: 100px;
+    right: 10px;
+}
+.valid-thru {
+    font-size: 0.8em;
+    color: black;
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.valid-thru .label {
+    text-transform: uppercase;
+    color: black;
+    font-size: 0.7em;
+    text-align: right;
+    line-height: 1.2;
+    margin-right: 5px;
+}
+.valid-thru input {
+    font-size: 1em;
+    font-weight: bold;
+    width: 60px;
+    border: none;
+    background: transparent;
+    text-align: center;
+    letter-spacing: 0.2em;
+    color: black;
+    outline: none;
+}
+.valid-thru input::placeholder {
+    color: lightgray;
+}
+.card-name {
+    position: absolute;
+    bottom: 30px;
+    left: 15px;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: black;
+    text-transform: uppercase;
+    width: 300px;
+    text-align: left;
+}
+.card-name input {
+    width: 100%;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: black;
+    background: transparent;
+    border: none;
+    outline: none;
+    text-transform: uppercase;
+    text-align: left;
+    caret-color: black;
+}
+.card-name input::placeholder {
+    color: lightgray;
+}
+.cvc-input {
+    position: absolute;
+    left: 55%;
+    transform: translateX(-50%);
+    margin-top: 100px;
+    width: 100px;
+    text-align: center;
+    font-size: 1em;
+    font-weight: bold;
+    color: black;
+    border: none;
+    background: transparent;
+    outline: none;
+    letter-spacing: 0.2em;
+}
+.cvc-input::placeholder {
+    color: lightgray;
+}
+.card#emptyCard::before {
+    content: '';
+    position: absolute;
+    bottom: 170px;
+    left: 0;
+    height: 50px;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
+}
+.noncvc {
+    position: absolute;
+    left: 61%;
+    transform: translateX(-50%);
+    margin-top: 101px;
+    color: white;
+}
+.card-contact {
+    font-size: 0.7em;
+    position: absolute;
+    left: 61%;
+    transform: translateX(-50%);
+    margin-top: 10px;
+    color: white;
+}

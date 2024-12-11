@@ -1,0 +1,306 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
+using Telegram.Bot;
+using Telegram.Bot.Types;
+
+namespace TelegramProfileBot
+{
+    class Program
+    {
+        // Список статей
+        static List<string> articles = new List<string>
+        {
+            "статья 228 УК РФ - приобретение, хранение, перевозка, переработку изготовление наркотических средств",
+            "статья 159 УК РФ - мошенничество",
+            "статья 105 УК РФ - убийство",
+            // Остальные статьи...
+        };
+
+        // Словари для хранения информации о пользователях
+        static Dictionary<long, (string article, DateTime updateTime)> userArticles = new Dictionary<long, (string, DateTime)>();
+        static Dictionary<long, UserProfile> userProfiles = new Dictionary<long, UserProfile>();
+        static Dictionary<long, UserActivity> userActivities = new Dictionary<long, UserActivity>();
+
+        // WeatherAPI ключ
+        static readonly string WeatherApiKey = "b75f86cbc968424f901154816241710"; // Вставьте ваш ключ WeatherAPI
+
+        static void Main(string[] args)
+        {
+            var client = new TelegramBotClient("7212845411:AAFKY27CMjljGepDP_aU5IRUh6QsHGAIDJc"); // Замените на токен вашего бота
+            client.StartReceiving(Update, Error);
+
+            Console.WriteLine("Profile Bot started...");
+            Console.ReadLine();
+        }
+
+        async static Task Update(ITelegramBotClient botClient, Update update, CancellationToken token)
+        {
+            var message = update.Message;
+            if (message?.Text != null)
+            {
+                long userId = message.From.Id;
+                string userName = message.From.FirstName + " " + (message.From.LastName ?? "");
+
+                // Создаем или обновляем профиль пользователя
+                if (!userProfiles.ContainsKey(userId))
+                {
+                    userProfiles[userId] = new UserProfile
+                    {
+                        UserId = userId,
+                        Name = userName,
+                        FirstUsage = DateTime.UtcNow,
+                        Gender = "Не указано",
+                        BirthDate = "Не указано",
+                        City = "Не указано",
+                        LastActivity = DateTime.UtcNow
+                    };
+                }
+
+                userProfiles[userId].LastActivity = DateTime.UtcNow;
+
+                if (!userActivities.ContainsKey(userId))
+                {
+                    userActivities[userId] = new UserActivity();
+                }
+                userActivities[userId].UpdateActivity();
+
+                // Обработка команды !профиль
+                if (message.Text.ToLower().Contains("!профиль"))
+                {
+                    var profile = userProfiles[userId];
+                    var activity = userActivities[userId];
+
+                    string lastActivityDisplay = FormatLastActivity(profile.LastActivity);
+                    string response = $"Это {profile.Name} ({lastActivityDisplay})\n" +
+                                      $"В братве DIASPORA находится: {profile.FirstUsage:dd.MM.yyyy}\n" +
+                                      $"Пол: {profile.Gender}\n" +
+                                      $"Дата рождения: {profile.BirthDate}\n" +
+                                      $"Город: {profile.City}\n" +
+                                      $"Активность (день|нед|месяц|всего): {activity.MessagesToday} | {activity.MessagesThisWeek} | {activity.MessagesThisMonth} | {activity.TotalMessages}";
+
+                    await botClient.SendTextMessageAsync(message.Chat.Id, response);
+                    return;
+                }
+
+                // Обработка команды !статья
+                if (message.Text.ToLower().Contains("!статья"))
+                {
+                    string userNameForArticle = message.From.Username ?? message.From.FirstName;
+
+                    if (!userArticles.ContainsKey(userId) || IsArticleExpired(userArticles[userId].updateTime))
+                    {
+                        var random = new Random();
+                        string newArticle = articles[random.Next(articles.Count)];
+                        userArticles[userId] = (newArticle, DateTime.UtcNow);
+                    }
+
+                    string responseMessage = $"@{userNameForArticle}, ваша {userArticles[userId].article}";
+                    await botClient.SendTextMessageAsync(message.Chat.Id, responseMessage);
+                    return;
+                }
+
+                // Обработка команды !погода
+                if (message.Text.ToLower().StartsWith("!погода"))
+                {
+                    string city = message.Text.Substring(8).Trim();
+                    if (string.IsNullOrEmpty(city))
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Пожалуйста, укажите город. Например: !погода Москва");
+                        return;
+                    }
+
+                    // Получаем данные о погоде
+                    string weatherInfo = await GetWeatherInfo(city);
+
+                    if (weatherInfo != null)
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, weatherInfo);
+                    }
+                    else
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, $"Не удалось найти данные о погоде для города {city}. Убедитесь, что вы ввели правильное название.");
+                    }
+                    return;
+                }
+
+                // Обработка других команд (!пол, !город, !дата...)
+                if (message.Text.ToLower().StartsWith("!пол "))
+                {
+                    string gender = message.Text.Substring(5).Trim();
+                    if (gender == "мужской" || gender == "женский")
+                    {
+                        userProfiles[userId].Gender = gender;
+                        await botClient.SendTextMessageAsync(message.Chat.Id, $"Пол успешно обновлен на {gender}");
+                    }
+                    else
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Укажите корректный пол (мужской/женский)");
+                    }
+                    return;
+                }
+
+                if (message.Text.ToLower().StartsWith("!город "))
+                {
+                    string city = message.Text.Substring(7).Trim();
+                    userProfiles[userId].City = city;
+                    await botClient.SendTextMessageAsync(message.Chat.Id, $"Город успешно обновлен на {city}");
+                    return;
+                }
+
+                if (message.Text.ToLower().StartsWith("!дата "))
+                {
+                    string birthDate = message.Text.Substring(6).Trim();
+                    DateTime parsedDate;
+                    if (DateTime.TryParseExact(birthDate, "dd.MM.yyyy", null, DateTimeStyles.None, out parsedDate))
+                    {
+                        userProfiles[userId].BirthDate = birthDate;
+                        await botClient.SendTextMessageAsync(message.Chat.Id, $"Дата рождения успешно обновлена на {birthDate}");
+                    }
+                    else
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Укажите дату в формате ДД.ММ.ГГГГ (например, 25.03.2007)");
+                    }
+                    return;
+                }
+            }
+        }
+
+        private static Task Error(ITelegramBotClient botClient, Exception exception, CancellationToken token)
+        {
+            Console.WriteLine($"Ошибка: {exception.Message}");
+            return Task.CompletedTask;
+        }
+
+        // Метод для форматирования последней активности
+        private static string FormatLastActivity(DateTime lastActivity)
+        {
+            DateTime currentTime = DateTime.UtcNow;
+            TimeZoneInfo moscowTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
+            DateTime lastActivityMoscow = TimeZoneInfo.ConvertTimeFromUtc(lastActivity, moscowTimeZone);
+            DateTime currentMoscowTime = TimeZoneInfo.ConvertTimeFromUtc(currentTime, moscowTimeZone);
+
+            if (lastActivityMoscow.Date == currentMoscowTime.Date)
+            {
+                return lastActivityMoscow.ToString("HH:mm");
+            }
+            else
+            {
+                return lastActivityMoscow.ToString("dd MMMM HH:mm");
+            }
+        }
+
+        // Метод для проверки, нужно ли обновить статью
+        static bool IsArticleExpired(DateTime lastUpdateTime)
+        {
+            DateTime currentMoscowTime = DateTime.UtcNow.AddHours(3);
+            DateTime lastUpdateMoscowTime = lastUpdateTime.AddHours(3);
+            return currentMoscowTime.Date > lastUpdateMoscowTime.Date;
+        }
+
+        // Метод для получения данных о погоде через WeatherAPI
+        private static async Task<string> GetWeatherInfo(string city)
+        {
+            string apiUrl = $"http://api.weatherapi.com/v1/forecast.json?key={WeatherApiKey}&q={city}&days=2&lang=ru";
+
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    HttpResponseMessage response = await client.GetAsync(apiUrl);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string responseBody = await response.Content.ReadAsStringAsync();
+                        JObject weatherData = JObject.Parse(responseBody);
+
+                        return FormatWeatherInfo(weatherData);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка при получении данных о погоде: {ex.Message}");
+                }
+            }
+            return null;
+        }
+
+        // Метод для форматирования данных о погоде
+        private static string FormatWeatherInfo(JObject weatherData)
+        {
+            string cityName = weatherData["location"]["name"].ToString();
+            string country = weatherData["location"]["country"].ToString();
+
+            // Текущая погода
+            string currentTemp = weatherData["current"]["temp_c"].ToString();
+            string condition = weatherData["current"]["condition"]["text"].ToString();
+            string windSpeed = weatherData["current"]["wind_kph"].ToString();
+            string humidity = weatherData["current"]["humidity"].ToString();
+
+            return $"Погода в городе {cityName}, {country}:\n" +
+                   $"Температура: {currentTemp}°C\n" +
+                   $"Состояние: {condition}\n" +
+                   $"Скорость ветра: {windSpeed} км/ч\n" +
+                   $"Влажность: {humidity}%";
+        }
+
+        // Классы для профиля и активности пользователя
+        public class UserProfile
+        {
+            public long UserId { get; set; }
+            public string Name { get; set; }
+            public DateTime FirstUsage { get; set; }
+            public string Gender { get; set; }
+            public string BirthDate { get; set; }
+            public string City { get; set; }
+            public DateTime LastActivity { get; set; }
+        }
+
+        public class UserActivity
+        {
+            public int MessagesToday { get; private set; }
+            public int MessagesThisWeek { get; private set; }
+            public int MessagesThisMonth { get; private set; }
+            public int TotalMessages { get; private set; }
+
+            private DateTime lastMessageTime;
+
+            public void UpdateActivity()
+            {
+                DateTime now = DateTime.UtcNow;
+
+                if (lastMessageTime.Date != now.Date)
+                {
+                    MessagesToday = 0;
+                }
+
+                if (GetWeekOfYear(lastMessageTime) != GetWeekOfYear(now))
+                {
+                    MessagesThisWeek = 0;
+                }
+
+                if (lastMessageTime.Month != now.Month)
+                {
+                    MessagesThisMonth = 0;
+                }
+
+                MessagesToday++;
+                MessagesThisWeek++;
+                MessagesThisMonth++;
+                TotalMessages++;
+
+                lastMessageTime = now;
+            }
+
+            private int GetWeekOfYear(DateTime dateTime)
+            {
+                CultureInfo cultureInfo = CultureInfo.CurrentCulture;
+                return cultureInfo.Calendar.GetWeekOfYear(dateTime, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+            }
+        }
+    }
+}

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>КТ1</title>
+<!-- For all browsers -->
+<link rel="icon" type="image/png" sizes="32x32" href="pngs/icon.png"/>
+<link rel="icon" type="image/png" sizes="16x16" href="pngs/icon.png"/>
+<!-- For Google and Android -->
+<link rel="icon" type="image/png" sizes="48x48" href="pngs/icon.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="pngs/icon.png"/>
+<!-- For iPad -->
+<link rel="apple-touch-icon" type="image/png" sizes="167x167" href="pngs/icon.png"/>
+<!-- For iPhone -->
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="pngs/icon.png"/>
+
+<link rel="stylesheet" href="style.css">
+<style>
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    background-color: #212121;
+    color: white;
+  }
+  .container {
+    display: flex;
+  }
+  table {
+    border-collapse: collapse;
+  }
+  table td {
+    border: 1px solid black;
+    padding: 10px;
+    text-align: center;
+  }
+  button {
+    margin-left: 20px;
+  }
+</style>
+</head>
+<body>
+    <div class="container">
+        <table>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+        <button onclick="addRandomNumber()">Добавить число</button>
+    </div>
+    <main>
+      <section id="task-links">
+          <div class="buttons-container">
+              <a href="index.html" class="task-button">Назад к заданиям</a>
+          </div>
+      </section>
+  </main>
+
+<script>
+  const randomNumbers = Array.from({ length: 30 }, () => Math.floor(Math.random() * 100));
+
+  const tableBody = document.getElementById('table-body');
+  let index = 0;
+  for (let i = 0; i < 5; i++) {
+    const row = document.createElement('tr');
+    for (let j = 0; j < 6; j++) {
+      const cell = document.createElement('td');
+      cell.textContent = randomNumbers[index];
+      if (randomNumbers[index] >= 50) {
+        cell.style.backgroundColor = 'orange';
+      }
+      row.appendChild(cell);
+      index++;
+    }
+    tableBody.appendChild(row);
+  }
+
+  function addRandomNumber() {
+    const randomNumber = Math.floor(Math.random() * 100);
+    const newCell = document.createElement('td');
+    newCell.textContent = randomNumber;
+    if (randomNumber >= 50) {
+      newCell.style.backgroundColor = 'orange';
+    }
+    if (index % 6 === 0) {
+      const newRow = document.createElement('tr');
+      newRow.appendChild(newCell);
+      tableBody.appendChild(newRow);
+    } else {
+      const currentRow = tableBody.lastChild;
+      currentRow.appendChild(newCell);
+    }
+    index++;
+  }
+</script>
+</body>
+</html>

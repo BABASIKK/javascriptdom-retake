@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>КТ4</title>
+    <!-- For all browsers -->
+    <link rel="icon" type="image/png" sizes="32x32" href="pngs/icon.png"/>
+    <link rel="icon" type="image/png" sizes="16x16" href="pngs/icon.png"/>
+    <!-- For Google and Android -->
+    <link rel="icon" type="image/png" sizes="48x48" href="pngs/icon.png"/>
+    <link rel="icon" type="image/png" sizes="192x192" href="pngs/icon.png"/>
+    <!-- For iPad -->
+    <link rel="apple-touch-icon" type="image/png" sizes="167x167" href="pngs/icon.png"/>
+    <!-- For iPhone -->
+    <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="pngs/icon.png"/>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="creditcard.css">
+</head>
+<body>
+    <div class="card-container">
+        <div class="card" id="card">
+            <img src="pngs/chip.png" alt="Чип" class="chip">
+            <img src="" alt="Банк" id="bankLogo" class="bank-logo" style="display: none;">
+            <img src="" alt="Платежная система" id="paymentLogo" class="payment-logo" style="display: none;">
+            <div class="account-number"></div>
+            <div class="card-number">
+                <input type="text" id="cardNumberInput" maxlength="19" pattern="\d*" value="" />
+                <div class="placeholder" id="placeholder">0000 0000 0000 0000</div>
+            </div>
+            <div class="valid-thru">
+                <div class="label">
+                    <div>VALID</div>
+                    <div>THRU</div>
+                </div>
+                <input type="text" id="expiryDateInput" placeholder="00/00" maxlength="5" pattern="\d{2}/\d{2}" />
+            </div>
+            <div class="card-name">
+                <input type="text" id="cardNameInput" placeholder="UNKNOWN CARD" maxlength="20" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+            </div>
+        </div>
+        <div class="card" id="emptyCard"></div>
+        <input type="text" id="cvcInput" class="cvc-input" maxlength="3" pattern="\d*" placeholder="CVC" oninput="this.value = this.value.replace(/\D/g, '')" />
+        <div class="noncvc">Никому не сообщайте<br>этот код, в том числе<br>сотруднику банка</div>
+        <div class="card-contact"><a href="index.html">&copy; $harabutdin Bank | 707 или +7 707 777 77-77</a></div>
+    </div>
+    <script>
+        const cardNumberInput = document.getElementById('cardNumberInput');
+        const placeholder = document.getElementById('placeholder');
+        const bankLogo = document.getElementById('bankLogo');
+        const paymentLogo = document.getElementById('paymentLogo');
+        const cardElement = document.getElementById('card');
+        const emptyCard = document.getElementById('emptyCard');
+        const expiryDateInput = document.getElementById('expiryDateInput');
+        const cardNameInput = document.getElementById('cardNameInput');
+        const cvcInput = document.getElementById('cvcInput');
+        cardNumberInput.addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            let formattedValue = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+            e.target.value = formattedValue.slice(0, 19);
+            placeholder.style.display = value.length > 0 ? 'none' : 'block';
+            updateLogosAndColors(value);
+        });
+        expiryDateInput.addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                let month = parseInt(value.slice(0, 2), 10);
+                if (month > 12) month = 12;
+                value = month.toString().padStart(2, '0') + value.slice(2); 
+                value = value.slice(0, 2) + '/' + value.slice(2);
+            }
+            expiryDateInput.value = value.slice(0, 5);
+        });
+        function updateLogosAndColors(cardNumber) {
+            bankLogo.style.display = 'none';
+            paymentLogo.style.display = 'none';
+            cardElement.className = 'card';
+            emptyCard.className = 'card';
+            let darkColor;
+            if (cardNumber.startsWith('5')) {
+                paymentLogo.src = 'pngs/mastercard.png';
+                paymentLogo.style.display = 'block';
+                darkColor = '#2E7B57';
+            } else if (cardNumber.startsWith('4')) {
+                paymentLogo.src = 'pngs/visa.png';
+                paymentLogo.style.display = 'block';
+                darkColor = '#AFAF37';
+            } else if (cardNumber.startsWith('2202')) {
+                paymentLogo.src = 'pngs/mir.png';
+                bankLogo.src = 'pngs/sberbank.png';
+                paymentLogo.style.display = 'block';
+                bankLogo.style.display = 'block';
+                cardElement.classList.add('sberbank');
+                emptyCard.classList.add('sberbank');
+                darkColor = '#2E7B57';
+            } else if (cardNumber.startsWith('2200')) {
+                paymentLogo.src = 'pngs/mir.png';
+                bankLogo.src = 'pngs/tinkoff.png';
+                paymentLogo.style.display = 'block';
+                bankLogo.style.display = 'block';
+                cardElement.classList.add('tinkoff');
+                emptyCard.classList.add('tinkoff');
+                darkColor = '#AFAF37';
+            }
+            let bankIdentifier = cardNumber.slice(1, 4);
+            if (bankIdentifier === '486') {
+                bankLogo.src = 'pngs/alfa.png';
+                bankLogo.style.display = 'block';
+                cardElement.classList.add('alfa');
+                emptyCard.classList.add('alfa');
+                darkColor = '#7B0000';
+            } else if (bankIdentifier === '513') {
+                bankLogo.src = 'pngs/tinkoff.png';
+                bankLogo.style.display = 'block';
+                cardElement.classList.add('tinkoff');
+                emptyCard.classList.add('tinkoff');
+                darkColor = '#AFAF37';
+            } else if (bankIdentifier === '779') {
+                bankLogo.src = 'pngs/alfa.png';
+                bankLogo.style.display = 'block';
+                cardElement.classList.add('alfa');
+                emptyCard.classList.add('alfa');
+                darkColor = '#7B0000';
+            }
+            if (darkColor) {
+                emptyCard.style.setProperty('--card-color', darkColor);
+            }
+        }
+        cardNameInput.addEventListener('input', (e) => {
+            cardNameInput.value = e.target.value.toUpperCase();
+        });
+        cardNumberInput.addEventListener('focus', () => {
+            placeholder.style.display = 'none';
+        });
+        cardNumberInput.addEventListener('blur', () => {
+            if (cardNumberInput.value === '') {
+                placeholder.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
